@@ -3,8 +3,9 @@
 //
 
 import { useAppKitNetwork, useAppKitAccount  } from '@reown/appkit/react'
-import { useReadContract, useWriteContract } from 'wagmi'
+import { useReadContract, useReadContracts, useWriteContract } from 'wagmi'
 import { useEffect } from 'react'
+import { erc20Abi, formatUnits } from 'viem'
 const storageABI = [
 	{
 		"inputs": [],
@@ -34,10 +35,11 @@ const storageABI = [
 	}
 ]
 
-const storageSC = "0xEe6D291CC60d7CeD6627fA4cd8506912245c8cA4" 
+const storageSC = "0xEe6D291CC60d7CeD6627fA4cd8506912245c8cA4"
+const SW3ca = "0x9f5F9EbBda30279E0cfE80C92269a034C636D51f"
 
 export const SmartContractActionButtonList = () => {
-    const { isConnected } = useAppKitAccount() // AppKit hook to get the address and check if the user is connected
+    const { address: loggedInWalletAddress, isConnected } = useAppKitAccount() // AppKit hook to get the address and check if the user is connected
     const { chainId } = useAppKitNetwork()
     const { writeContract, isSuccess } = useWriteContract()
     const readContract = useReadContract({
@@ -47,6 +49,37 @@ export const SmartContractActionButtonList = () => {
       query: {
         enabled: false, // disable the query in onload
       }
+    })
+
+    const readSW3Balance = useReadContracts({
+      allowFailure: false,
+      contracts: [
+        {
+          address: SW3ca,
+          abi: erc20Abi,
+          functionName: 'balanceOf',
+          args: [loggedInWalletAddress],
+          query: {
+            enabled: false, // disable the query in onload
+          },
+        },
+        {
+          address: SW3ca,
+          abi: erc20Abi,
+          functionName: 'decimals',
+          query: {
+            enabled: false, // disable the query in onload
+          },
+        },
+        {
+          address: SW3ca,
+          abi: erc20Abi,
+          functionName: 'symbol',
+          query: {
+            enabled: false, // disable the query in onload
+          },
+        },
+      ]
     })
 
     useEffect(() => {
@@ -59,6 +92,13 @@ export const SmartContractActionButtonList = () => {
       console.log("Read Sepolia Smart Contract");
       const { data } = await readContract.refetch();
       console.log("data: ", data)
+    }
+
+    const handleReadSW3Balance = async () => {
+      console.log("Read SW3 token balance.");
+      const { data } = await readSW3Balance.refetch();
+      const output = formatUnits(data[0], data[1]);
+      console.log("Balance: ", output, data[2]);
     }
 
     const handleWriteSmartContract = () => {
@@ -76,6 +116,7 @@ export const SmartContractActionButtonList = () => {
     isConnected && chainId === 11155111 && ( // Only show the buttons if the user is connected to Sepolia
     <div >
         <button onClick={handleReadSmartContract}>Read Sepolia Smart Contract</button>
+        <button onClick={handleReadSW3Balance}>Read SW3 Token Balance</button>
         <button onClick={handleWriteSmartContract}>Write Sepolia Smart Contract</button>  
     </div>
     )
