@@ -4,7 +4,7 @@
 
 import { useAppKitNetwork, useAppKitAccount  } from '@reown/appkit/react'
 import { useReadContract, useReadContracts, useWriteContract } from 'wagmi'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { erc20Abi, formatUnits } from 'viem'
 const storageABI = [
 	{
@@ -42,6 +42,11 @@ export const SmartContractActionButtonList = () => {
     const { address: loggedInWalletAddress, isConnected } = useAppKitAccount() // AppKit hook to get the address and check if the user is connected
     const { chainId } = useAppKitNetwork()
     const { writeContract, isSuccess } = useWriteContract()
+
+    const [isLoading, setIsLoading] = useState(true)
+    const [formattedBalance, setFormattedBalance] = useState(null)
+    const [tokenSymbol, setTokenSymbol] = useState(null)
+
     const readContract = useReadContract({
       address: storageSC,
       abi: storageABI,
@@ -82,11 +87,24 @@ export const SmartContractActionButtonList = () => {
       ]
     })
 
+    const loadSW3Data = async () => {
+      const { data } = await readSW3Balance.refetch();
+      const balance = formatUnits(data[0], data[1]);
+      setFormattedBalance(balance);
+      setTokenSymbol(data[2]);
+      console.log("Balance set in loadSW3Data.");
+
+      setIsLoading(false);
+    }
+
     useEffect(() => {
       if (isSuccess) {
         console.log("contract write success");
       }
-    }, [isSuccess])
+      if (isLoading) {
+        loadSW3Data();
+      }
+    }, [isSuccess, isLoading])
 
     const handleReadSmartContract = async () => {
       console.log("Read Sepolia Smart Contract");
@@ -111,14 +129,15 @@ export const SmartContractActionButtonList = () => {
         })
     }
 
-
   return (
-    isConnected && chainId === 11155111 && ( // Only show the buttons if the user is connected to Sepolia
-    <div >
+    isConnected && chainId === 11155111 && !isLoading && ( // Only show the buttons if the user is connected to Sepolia
+      <div>
         <button onClick={handleReadSmartContract}>Read Sepolia Smart Contract</button>
         <button onClick={handleReadSW3Balance}>Read SW3 Token Balance</button>
-        <button onClick={handleWriteSmartContract}>Write Sepolia Smart Contract</button>  
-    </div>
+        <button onClick={handleWriteSmartContract}>Write Sepolia Smart Contract</button>
+        <br />
+        Balance: {formattedBalance} {tokenSymbol}
+      </div>
     )
   )
 }
