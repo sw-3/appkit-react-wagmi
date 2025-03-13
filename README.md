@@ -2,6 +2,8 @@
 
 This is a [Vite](https://vitejs.dev) project together with React.
 
+I extended this example to show the correct way to read an ERC20 token balance from the connected wallet, and display it on the page. My added code is in the SmartContractActionButtonList component.
+
 ## Usage
 
 1. Go to [Reown Cloud](https://cloud.reown.com) and create a new project.
